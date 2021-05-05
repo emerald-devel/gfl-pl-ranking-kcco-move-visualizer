@@ -161,7 +161,7 @@ function updateCanvas() {
 	};
 
 	// Draw nodes.
-	for(let node of data) {
+	for(let [index, node] of data.entries()) {
 		let highlight_node = getNodesInHighlightPath().indexOf(node) >= 0;
 		ctx.beginPath();
 
@@ -187,6 +187,9 @@ function updateCanvas() {
 		ctx.textAlign = 'center';
 		ctx.font = 'bold ' + Math.floor(config.radius * 0.7) + 'pt Arial';
 		ctx.fillText(node.friendly_id, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]) + config.radius * 0.32);
+		ctx.font = 'bold ' + Math.floor(config.radius * 0.35) + 'pt Arial';
+		ctx.fillText('#' + (index + 1), calculateX(node.coordinates[0]), calculateY(node.coordinates[1]) + config.radius * 0.8);
+
 		ctx.stroke();
 	}
 }
