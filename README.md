@@ -6,7 +6,7 @@ Expand AI behavior is weird. It's not consistently predictable when just looking
 
 ## How to Install
 
-Just download the thing and open the index.html file in your browser. No internet required. No fancy installation tools. Just browser.
+Just download the thing and open the index.html file in your browser. No internet required. No fancy installation tools. Just browser. Or use [this online version](https://emerald-devel.github.io/gfl-pl-ranking-kcco-move-visualizer/index.html). Whatever floats your boat.
 
 ## How to Use
 
