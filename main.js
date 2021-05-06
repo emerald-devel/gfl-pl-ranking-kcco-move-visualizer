@@ -1,18 +1,33 @@
-// Necessary? Probably not. But magic numbers are disgusting and I like how easy this is to configure.
-const factions = {
-	Neutral: 3,
-	GK: 1,
-	KCCO: 2,
-	Paradeus: 0
-};
-
-// Honestly should probably just stuff into factions above, but I'll do that in a later iteration.
-const faction_colors = [
-	'#FFEE00',
-	'#00EEFF',
-	'#EE0000',
-	'#FFFFFF'
+// Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure.
+const factions = [
+	{
+		id: 3,
+		name: 'Neutral',
+		color: '#FFFFFF'
+	},
+	{
+		id: 1,
+		name: 'GK',
+		color: '#00EEFF'
+	},
+	{
+		id: 2,
+		name: 'KCCO',
+		color: '#EE0000'
+	},
+	{
+		id: 0,
+		name: 'Paradeus',
+		color: '#FFEE00'
+	}
 ];
+
+// Because repeated array searches are disgusting and I don't want to write multiple functions to grab a color or compare IDs.
+const faction_map = factions.reduce((map, faction) => {
+	map[faction.name] = faction;
+	map[faction.id] = faction;
+	return map;
+}, {});
 
 // Because individual global variables are disgusting but we still need global application state because passing a bunch of config values as function parameters throughout the entire call stack is even more disgusting.
 const config = {
@@ -204,7 +219,7 @@ function updateCanvas() {
 
 		// Actual map node.
 		ctx.arc(calculateX(node.coordinates[0]), calculateY(node.coordinates[1]), config.radius, 0, 2 * Math.PI, false);
-		ctx.fillStyle = faction_colors[node.owner];
+		ctx.fillStyle = faction_map[node.owner].color;
 		ctx.fill();
 		ctx.stroke();
 		ctx.beginPath();
@@ -212,7 +227,7 @@ function updateCanvas() {
 		// Occupation indicator.
 		if(node.occupied) {
 			ctx.arc(calculateX(node.coordinates[0]) + config.radius, calculateY(node.coordinates[1]) - 0.8*config.radius, 6, 0, 2 * Math.PI, false);
-			ctx.fillStyle = faction_colors[node.owner];
+			ctx.fillStyle = faction_map[node.owner].color;
 			ctx.fill();
 			ctx.stroke();
 			ctx.beginPath();
@@ -246,7 +261,7 @@ function getCursorPosition(canvas, event) {
 function calculateNodePriority(nodes) {
 	// Assumed: Allied heliports are highest priority.
 	for(let node of nodes) {
-		if(node.owner === factions.GK) {
+		if(node.owner === faction_map.GK.id) {
 			if(node.type === 'heliport' || node.type === 'heavy heliport') {
 				return node;
 			}
@@ -255,14 +270,14 @@ function calculateNodePriority(nodes) {
 
 	// Assumed: If no allied heliports, then allied nodes are highest priority.
 	for(let node of nodes) {
-		if(node.owner === factions.GK) {
+		if(node.owner === faction_map.GK.id) {
 			return node;
 		}
 	}
 
 	// Assumed: If no allied nodes, then neutral heliports are highest priority.
 	for(let node of nodes) {
-		if(node.faction === factions.Neutral) {
+		if(node.faction === faction_map.Neutral.id) {
 			if(node.type === 'heliport' || node.type === 'heavy heliport') {
 				return node;
 			}
@@ -277,7 +292,7 @@ function calculateNextNodeMove(node) {
 	// This function body could easily be replaced or re-adapted for lots of other AI behaviors. For now, this is being used for "expand" AI behavior from the KCCO faction only.
 
 	// KCCO are greedy and lazy. If they don't already own the land they're standing on, they'll plant their asses on it and claim it as their own.
-	if(node.owner !== factions.KCCO) {
+	if(node.owner !== faction_map.KCCO.id) {
 		config.highlight_path = {
 			start: node,
 			end: node
@@ -322,7 +337,7 @@ function calculateNextNodeMove(node) {
 
 			// Now we filter out candidates that have already been capped by KCCO.
 			let valid_candidates = candidate_nodes.filter((candidate) => {
-				return candidate.owner !== factions.KCCO;
+				return candidate.owner !== faction_map.KCCO.id;
 			});
 
 			// If we have any valid candidates, then we can proceed with node selection, otherwise we need to take another pass at the next BFS depth.
@@ -374,7 +389,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're clicking inside of the circle.
 				let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 				if(distance <= config.radius) {
-					node.owner = (node.owner + 1) % faction_colors.length;
+					node.owner = (node.owner + 1) % factions.length;
 				}
 			}
 		}
