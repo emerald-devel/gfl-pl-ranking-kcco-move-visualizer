@@ -10,7 +10,9 @@ Just download the thing and open the index.html file in your browser. No interne
 
 ## How to Use
 
-Left-click a node to change its faction ownership. Right-click a node to see the path the mob on that node will take and which node it's targeting.
+- Left-click a node to change its faction ownership.
+- Right-click a node to see the path the mob on that node will take and which node it's targeting.
+- Ctrl + right-click a node to mark the node as occupied. Useful for accounting for obstructed paths.
 
 ## Disclaimer
 
