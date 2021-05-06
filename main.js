@@ -295,6 +295,7 @@ function calculateNextNodeMove(node) {
 
 		let nodes_visited = [node];
 		let destination = null;
+		let is_first_pass = true;
 
 		// Breadth-first search. Keep going until either we find a solution or run out of options (in reality this would never happen, but prevents infinite loops when testing or fucking around with the map by marking all nodes as capped by KCCO).
 		while(destination === null && nodes_visited.length > 0) {
@@ -308,7 +309,7 @@ function calculateNextNodeMove(node) {
 						node_map[sibling_id].from_node = visited_node;
 
 						// If not occupied, then add the node to our list of candidates so we can check if it's a winner later.
-						if(!node_map[sibling_id].occupied) {
+						if(!is_first_pass || !node_map[sibling_id].occupied) {
 							candidate_nodes.push(node_map[sibling_id]);
 						}
 
@@ -330,6 +331,8 @@ function calculateNextNodeMove(node) {
 			} else {
 				nodes_visited = candidate_nodes;
 			}
+
+			is_first_pass = false;
 		}
 
 		// Found a match? Cool, add the start and end of the path. End node can be traversed backward to start node. Otherwise there's nothing to do.
