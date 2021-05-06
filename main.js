@@ -82,7 +82,7 @@ function calculateY(y) {
 }
 
 function calculateArrowIncrements(from_x, from_y, to_x, to_y) {
-	const segment_length = 10;
+	const segment_length = 40 * config.scale;
 
 	let line_length = calculateNodeDistance(from_x, from_y, to_x, to_y);
 	let line_scale = segment_length / line_length;
@@ -129,15 +129,16 @@ function drawPath(node1, node2, is_one_way) {
 	const ctx = canvas.getContext('2d');
 	ctx.beginPath();
 
-	ctx.lineWidth = 4;
+	ctx.lineWidth = 20 * config.scale;
 	ctx.strokeStyle = shouldHighlightPath(node1, node2) ? '#00FF00' : '#DDDDDD';
 	ctx.moveTo(from_x, from_y);
 	ctx.lineTo(to_x, to_y);
 
 	// Draws a one-way path if necessary.
 	if(is_one_way) {
+		ctx.lineWidth = 15 * config.scale;
 		const arrow_head_angle = Math.PI / 4;
-		const arrow_head_length = 9;
+		const arrow_head_length = 35 * config.scale;
 
 		let delta_x = to_x - from_x;
 		let delta_y = to_y - from_y;
@@ -208,12 +209,12 @@ function updateCanvas() {
 			ctx.fillStyle = is_end_node ? '#FF00FF' : '#00FF00';
 			ctx.fill();
 
-			ctx.lineWidth = 1;
+			ctx.lineWidth = 4 * config.scale;
 			ctx.strokeStyle = is_end_node ? '#FF00FF' : '#00FF00';
 			ctx.stroke();
 			ctx.beginPath();
 		} else {
-			ctx.lineWidth = 3;
+			ctx.lineWidth = 12 * config.scale;
 			ctx.strokeStyle = '#252525';
 		}
 
