@@ -1,3 +1,20 @@
+const node_types = {
+	1: 'hq',
+	2: 'normal',
+	3: 'heliport',
+	5: 'crate',
+	7: 'heavy heliport'
+};
+
+// Transform the data into something a little more usable.
+const data = raw_data.map((node) => {
+	node.route = node.route.split(',');
+	node.friendly_id = id_map[node.id];
+	node.coordinates = [node.coordinator_x, node.coordinator_y];
+
+	return node;
+});
+
 // Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure.
 const factions = [
 	{
@@ -220,7 +237,7 @@ function updateCanvas() {
 
 		// Actual map node.
 		ctx.arc(calculateX(node.coordinates[0]), calculateY(node.coordinates[1]), config.radius, 0, 2 * Math.PI, false);
-		ctx.fillStyle = faction_map[node.owner].color;
+		ctx.fillStyle = faction_map[node.belong].color;
 		ctx.fill();
 		ctx.stroke();
 		ctx.beginPath();
@@ -228,7 +245,7 @@ function updateCanvas() {
 		// Occupation indicator.
 		if(node.occupied) {
 			ctx.arc(calculateX(node.coordinates[0]) + config.radius, calculateY(node.coordinates[1]) - 0.8*config.radius, 6, 0, 2 * Math.PI, false);
-			ctx.fillStyle = faction_map[node.owner].color;
+			ctx.fillStyle = faction_map[node.belong].color;
 			ctx.fill();
 			ctx.stroke();
 			ctx.beginPath();
@@ -262,8 +279,8 @@ function getCursorPosition(canvas, event) {
 function calculateNodePriority(nodes) {
 	// Assumed: Allied heliports are highest priority.
 	for(let node of nodes) {
-		if(node.owner === faction_map.GK.id) {
-			if(node.type === 'heliport' || node.type === 'heavy heliport') {
+		if(node.belong === faction_map.GK.id) {
+			if(node_types[node.type] === 'heliport' || node_types[node.type] === 'heavy heliport') {
 				return node;
 			}
 		}
@@ -271,7 +288,7 @@ function calculateNodePriority(nodes) {
 
 	// Assumed: If no allied heliports, then allied nodes are highest priority.
 	for(let node of nodes) {
-		if(node.owner === faction_map.GK.id) {
+		if(node.belong === faction_map.GK.id) {
 			return node;
 		}
 	}
@@ -279,7 +296,7 @@ function calculateNodePriority(nodes) {
 	// Assumed: If no allied nodes, then neutral heliports are highest priority.
 	for(let node of nodes) {
 		if(node.faction === faction_map.Neutral.id) {
-			if(node.type === 'heliport' || node.type === 'heavy heliport') {
+			if(node_types[node.type] === 'heliport' || node_types[node.type] === 'heavy heliport') {
 				return node;
 			}
 		}
@@ -293,7 +310,7 @@ function calculateNextNodeMove(node) {
 	// This function body could easily be replaced or re-adapted for lots of other AI behaviors. For now, this is being used for "expand" AI behavior from the KCCO faction only.
 
 	// KCCO are greedy and lazy. If they don't already own the land they're standing on, they'll plant their asses on it and claim it as their own.
-	if(node.owner !== faction_map.KCCO.id) {
+	if(node.belong !== faction_map.KCCO.id) {
 		config.highlight_path = {
 			start: node,
 			end: node
@@ -338,7 +355,7 @@ function calculateNextNodeMove(node) {
 
 			// Now we filter out candidates that have already been capped by KCCO.
 			let valid_candidates = candidate_nodes.filter((candidate) => {
-				return candidate.owner !== faction_map.KCCO.id;
+				return candidate.belong !== faction_map.KCCO.id;
 			});
 
 			// If we have any valid candidates, then we can proceed with node selection, otherwise we need to take another pass at the next BFS depth.
@@ -390,7 +407,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're clicking inside of the circle.
 				let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 				if(distance <= config.radius) {
-					node.owner = (node.owner + 1) % factions.length;
+					node.belong = (node.belong + 1) % factions.length;
 				}
 			}
 		}
