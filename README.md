@@ -11,8 +11,8 @@ Just download the thing and open the index.html file in your browser. No interne
 ## How to Use
 
 - Left-click a node to change its faction ownership.
-- Right-click a node to see the path the mob on that node will take and which node it's targeting.
-- Experimental: Ctrl + right-click a node to mark the node as occupied. Useful for accounting for obstructed paths, but no data exists yet to back up the predictions. Do not rely on this, but feel free to compare the predictions against actual enemy movement.
+- Right-click a node to mark it as being occupied by a mob. One click gives it a normal mob (small dot) and a second click gives it a deathstack (large dot).
+- Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements. Clicking elsewhere will revert back to the pre-calculation view.
 
 ## Disclaimer
 
