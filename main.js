@@ -293,16 +293,7 @@ function calculateNodePriority(nodes) {
 		}
 	}
 
-	// Assumed: If no allied nodes, then neutral heliports are highest priority.
-	for(let node of nodes) {
-		if(node.faction === faction_map.Neutral.id) {
-			if(node_types[node.type] === 'heliport' || node_types[node.type] === 'heavy heliport') {
-				return node;
-			}
-		}
-	}
-
-	// Assumed: If no allied nodes or neutral heliports, then first neutral node is highest priority.
+	// If for whatever reason the first two passes failed, return the first node available. Should never happen, but you never know.
 	return nodes[0];
 }
 
@@ -355,7 +346,7 @@ function calculateNextNodeMove(node) {
 
 			// Now we filter out candidates that have already been capped by KCCO.
 			let valid_candidates = candidate_nodes.filter((candidate) => {
-				return candidate.belong !== faction_map.KCCO.id;
+				return candidate.belong === faction_map.GK.id;
 			});
 
 			// If we have any valid candidates, then we can proceed with node selection, otherwise we need to take another pass at the next BFS depth.
