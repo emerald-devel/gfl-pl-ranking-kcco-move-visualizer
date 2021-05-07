@@ -1,3 +1,4 @@
+// Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure.
 const node_types = {
 	1: 'hq',
 	2: 'normal',
@@ -6,16 +7,7 @@ const node_types = {
 	7: 'heavy heliport'
 };
 
-// Transform the data into something a little more usable.
-const data = raw_data.map((node) => {
-	node.route = node.route.split(',');
-	node.friendly_id = id_map[node.id];
-	node.coordinates = [node.coordinator_x, node.coordinator_y];
-
-	return node;
-});
-
-// Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure.
+// Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure. Yes, it's a copy-pasta of the above comment, get over it.
 const factions = [
 	{
 		id: 3,
@@ -46,6 +38,17 @@ const faction_map = factions.reduce((map, faction) => {
 	return map;
 }, {});
 
+// Transform the data into something a little more usable.
+const data = raw_data.map((node) => {
+	node.route = node.route.split(',');
+	node.friendly_id = id_map[node.id];
+	node.coordinates = [node.coordinator_x, node.coordinator_y];
+	node.occupied = node.ally_team_id > 0 ? 2 : (node.enemy_team_id > 0 ? 1 : 0);
+	node.occupied = node.belong === faction_map.KCCO.id ? node.occupied : 0;
+
+	return node;
+});
+
 // Because individual global variables are disgusting but we still need global application state because passing a bunch of config values as function parameters throughout the entire call stack is even more disgusting.
 const config = {
 	scale: 0.25,
@@ -55,7 +58,15 @@ const config = {
 	offset_y: 0,
 	radius: 100,
 	margin: 50,
-	highlight_path: null
+	highlight_path: null,
+	move_set: {},
+	calculate_button: {
+		position: [-350, -1000],
+		width: 1000,
+		height: 250,
+		scale: 1,
+		color: '#EE9933'
+	}
 };
 
 function initConfig() {
@@ -108,62 +119,47 @@ function calculateArrowIncrements(from_x, from_y, to_x, to_y) {
 	return [-(to_x - from_x) * line_scale, -(to_y - from_y) * line_scale];
 }
 
-function getNodesInHighlightPath() {
-	// No node selected? Nothing in the path.
-	if(config.highlight_path === null) {
-		return [];
-	}
-
-	// Super simple: just start from the end node and travel backwards along the "from_node" values stored along each node.
-	let current_node = config.highlight_path.end;
-	let nodes = [current_node];
-	while(current_node.hasOwnProperty('from_node')) {
-		nodes.push(current_node.from_node);
-		current_node = current_node.from_node;
-	}
-
-	return nodes;
-}
-
-function shouldHighlightPath(node1, node2) {
-	// No node selected? Nothing to highlight.
-	if(config.highlight_path === null) {
-		return false;
-	}
-
-	let nodes = getNodesInHighlightPath();
-
-	return nodes.indexOf(node1) >= 0 && nodes.indexOf(node2) >= 0;
-}
-
 function drawPath(node1, node2, is_one_way) {
+	let highlight = (node2.hasOwnProperty('from_node') && node2.from_node === node1) || (node1.hasOwnProperty('from_node') && node1.from_node === node2);
+	if(highlight && node1.hasOwnProperty('from_node') && node1.from_node === node2) {
+		let temp = node1;
+		node1 = node2;
+		node2 = node1;
+	}
+
 	let from_x = calculateX(node1.coordinates[0]);
 	let from_y = calculateY(node1.coordinates[1]);
 	let to_x = calculateX(node2.coordinates[0]);
 	let to_y = calculateY(node2.coordinates[1]);
+
+	const arrow_head_angle = Math.PI / 4;
+	const arrow_head_length = 35 * config.scale;
 
 	const canvas = document.getElementById('draw-space');
 	const ctx = canvas.getContext('2d');
 	ctx.beginPath();
 
 	ctx.lineWidth = 20 * config.scale;
-	ctx.strokeStyle = shouldHighlightPath(node1, node2) ? '#00FF00' : '#DDDDDD';
+	ctx.strokeStyle = highlight ? '#00DD00' : '#DDDDDD';
 	ctx.moveTo(from_x, from_y);
 	ctx.lineTo(to_x, to_y);
 
+	let delta_x = to_x - from_x;
+	let delta_y = to_y - from_y;
+	let angle = Math.atan2(delta_y, delta_x);
+	let [x_inc, y_inc] = calculateArrowIncrements(from_x, from_y, to_x, to_y);
+
 	// Draws a one-way path if necessary.
-	if(is_one_way) {
+	if(is_one_way || highlight) {
 		ctx.lineWidth = 15 * config.scale;
-		const arrow_head_angle = Math.PI / 4;
-		const arrow_head_length = 35 * config.scale;
 
-		let delta_x = to_x - from_x;
-		let delta_y = to_y - from_y;
-		let angle = Math.atan2(delta_y, delta_x);
-
-		let [x_inc, y_inc] = calculateArrowIncrements(from_x, from_y, to_x, to_y);
 		let next_x = to_x;
 		let next_y = to_y;
+
+		if(highlight) {
+			x_inc *= 3;
+			y_inc *= 3;
+		}
 
 		// A one-way path is basically just a bunch of arrow heads along the length of the path. Just place them within a reasonable distance of each other until you've covered the path.
 		while((next_x >= from_x && next_x <= to_x) || (next_x <= from_x && next_x >= to_x)) {
@@ -186,7 +182,7 @@ function drawPath(node1, node2, is_one_way) {
 	ctx.stroke();
 }
 
-function updateCanvas() {
+function updateCanvas(nodes) {
 	const canvas = document.getElementById('draw-space');
 	const ctx = canvas.getContext('2d');
 
@@ -197,7 +193,7 @@ function updateCanvas() {
 	// Map connections.
 	const node_map = {};
 	const connection_map = {};
-	for(let node of data) {
+	for(let node of nodes) {
 		node_map[node.id] = node;
 		connection_map[node.id] = {};
 		for(connection of node.route) {
@@ -206,7 +202,7 @@ function updateCanvas() {
 	}
 
 	// Draw paths.
-	for(let node of data) {
+	for(let node of nodes) {
 		for(connection of node.route) {
 			let is_one_way = connection_map[connection][node.id] ? false : true;
 
@@ -215,27 +211,12 @@ function updateCanvas() {
 	};
 
 	// Draw nodes.
-	for(let [index, node] of data.entries()) {
-		let highlight_node = getNodesInHighlightPath().indexOf(node) >= 0;
+	for(let [index, node] of nodes.entries()) {
 		ctx.beginPath();
 
-		// Colorful highlighted borders for nodes in the prediction path.
-		if(highlight_node) {
-			let is_end_node = node === config.highlight_path.end;
-			ctx.arc(calculateX(node.coordinates[0]), calculateY(node.coordinates[1]), config.radius + 4, 0, 2 * Math.PI, false);
-			ctx.fillStyle = is_end_node ? '#FF00FF' : '#00FF00';
-			ctx.fill();
-
-			ctx.lineWidth = 4 * config.scale;
-			ctx.strokeStyle = is_end_node ? '#FF00FF' : '#00FF00';
-			ctx.stroke();
-			ctx.beginPath();
-		} else {
-			ctx.lineWidth = 12 * config.scale;
-			ctx.strokeStyle = '#252525';
-		}
-
 		// Actual map node.
+		ctx.lineWidth = 12 * config.scale;
+		ctx.strokeStyle = '#252525';
 		ctx.arc(calculateX(node.coordinates[0]), calculateY(node.coordinates[1]), config.radius, 0, 2 * Math.PI, false);
 		ctx.fillStyle = faction_map[node.belong].color;
 		ctx.fill();
@@ -244,7 +225,7 @@ function updateCanvas() {
 
 		// Occupation indicator.
 		if(node.occupied) {
-			ctx.arc(calculateX(node.coordinates[0]) + config.radius, calculateY(node.coordinates[1]) - 0.8*config.radius, 6, 0, 2 * Math.PI, false);
+			ctx.arc(calculateX(node.coordinates[0]) + config.radius, calculateY(node.coordinates[1]) - 0.8*config.radius, 0.2 * node.occupied * config.radius, 0, 2 * Math.PI, false);
 			ctx.fillStyle = faction_map[node.belong].color;
 			ctx.fill();
 			ctx.stroke();
@@ -263,6 +244,26 @@ function updateCanvas() {
 		ctx.beginPath();
 		ctx.font = 'bold ' + Math.floor(config.radius * 0.35) + 'pt Arial';
 		ctx.fillText('#' + (index + 1), calculateX(node.coordinates[0]), calculateY(node.coordinates[1]) + config.radius * 0.8);
+
+		ctx.stroke();
+		ctx.beginPath();
+
+		// It's a button. A big, orange button.
+		ctx.fillStyle = config.calculate_button.color;
+		ctx.fillRect(
+			calculateX(config.calculate_button.position[0]),
+			calculateY(config.calculate_button.position[1]),
+			config.calculate_button.width * config.calculate_button.scale * config.scale,
+			config.calculate_button.height * config.calculate_button.scale * config.scale
+		);
+
+		ctx.strokeStyle = '#252525';
+		ctx.fillStyle = '#252525';
+		ctx.font = Math.floor(config.radius) + 'pt Arial';
+		ctx.fillText('Calculate Moves',
+			calculateX(config.calculate_button.position[0]) + config.calculate_button.width * config.scale / 2,
+			calculateY(config.calculate_button.position[1]) + 1.35 * config.calculate_button.height * config.scale / 2
+		);
 
 		ctx.stroke();
 	}
@@ -293,82 +294,117 @@ function calculateNodePriority(nodes) {
 		}
 	}
 
-	// If for whatever reason the first two passes failed, return the first node available. Should never happen, but you never know.
+	// Assumed: If no allied nodes, then neutral heliports are highest priority.
+	for(let node of nodes) {
+		if(node.faction === faction_map.Neutral.id) {
+			if(node_types[node.type] === 'heliport' || node_types[node.type] === 'heavy heliport') {
+				return node;
+			}
+		}
+	}
+
+	// Assumed: If no allied nodes or neutral heliports, then first neutral node is highest priority.
 	return nodes[0];
 }
 
-function calculateNextNodeMove(node) {
+function calculateNextNodeMove(node, nodes) {
 	// This function body could easily be replaced or re-adapted for lots of other AI behaviors. For now, this is being used for "expand" AI behavior from the KCCO faction only.
 
 	// KCCO are greedy and lazy. If they don't already own the land they're standing on, they'll plant their asses on it and claim it as their own.
 	if(node.belong !== faction_map.KCCO.id) {
-		config.highlight_path = {
-			start: node,
-			end: node
-		};
-	} else {
-		// Why a node map? Because performing excessive numbers of array searches drains my sanity.
-		node_map = {};
-		for(let next_node of data) {
-			if(node.id === next_node.id) {
-				continue;
-			}
+		return node;
+	}
 
-			node_map[next_node.id] = next_node;
+	// Why a node map? Because performing excessive numbers of array searches drains my sanity.
+	node_map = {};
+	for(let next_node of nodes) {
+		if(node.id === next_node.id) {
+			continue;
 		}
 
-		let nodes_visited = [node];
-		let destination = null;
-		let is_first_pass = true;
+		node_map[next_node.id] = next_node;
+	}
 
-		// Breadth-first search. Keep going until either we find a solution or run out of options (in reality this would never happen, but prevents infinite loops when testing or fucking around with the map by marking all nodes as capped by KCCO).
-		while(destination === null && nodes_visited.length > 0) {
-			// Find all nodes at BFS depth + 1, i.e. all unvisited nodes directly adjacent to our visited nodes list.
-			let candidate_nodes = [];
-			for(let visited_node of nodes_visited) {
-				for(let sibling_id of visited_node.route) {
-					// A sibling node hasn't been visited if it's still in our node map.
-					if(node_map.hasOwnProperty(sibling_id)) {
-						// By keeping track of which node first found this sibling, we can effectively cache the path of a BFS result for this particular node by traversing from the end node back to the beginning.
-						node_map[sibling_id].from_node = visited_node;
+	let nodes_visited = [node];
+	let destination = null;
+	let is_first_pass = true;
 
-						// If not occupied, then add the node to our list of candidates so we can check if it's a winner later.
-						if(!is_first_pass || !node_map[sibling_id].occupied) {
-							candidate_nodes.push(node_map[sibling_id]);
-						}
+	// Breadth-first search. Keep going until either we find a solution or run out of options (in reality this would never happen, but prevents infinite loops when testing or fucking around with the map by marking all nodes as capped by KCCO).
+	while(destination === null && nodes_visited.length > 0) {
+		// Find all nodes at BFS depth + 1, i.e. all unvisited nodes directly adjacent to our visited nodes list.
+		let candidate_nodes = [];
+		for(let visited_node of nodes_visited) {
+			for(let sibling_id of visited_node.route) {
+				// A sibling node hasn't been visited if it's still in our node map.
+				if(node_map.hasOwnProperty(sibling_id)) {
+					let sibling_node = node_map[sibling_id];
 
-						// Once we've located this unvisited sibling, we remove it from the node map, which effectively treats it as having been visited.
-						node_map[sibling_id] = null;
-						delete node_map[sibling_id];
+					// Once we've located this unvisited sibling, we remove it from the node map, which effectively treats it as having been visited.
+					node_map[sibling_id] = null;
+					delete node_map[sibling_id];
+
+					// By keeping track of which node first found this sibling, we can effectively cache the path of a BFS result for this particular node by traversing from the end node back to the beginning.
+					sibling_node.prev_node = visited_node;
+
+					// If not occupied, then add the node to our list of candidates so we can check if it's a winner later.
+					if(!is_first_pass || !sibling_node.occupied) {
+						candidate_nodes.push(sibling_node);
 					}
 				}
 			}
-
-			// Now we filter out candidates that have already been capped by KCCO.
-			let valid_candidates = candidate_nodes.filter((candidate) => {
-				return candidate.belong === faction_map.GK.id;
-			});
-
-			// If we have any valid candidates, then we can proceed with node selection, otherwise we need to take another pass at the next BFS depth.
-			if(valid_candidates.length > 0) {
-				destination = calculateNodePriority(valid_candidates);
-			} else {
-				nodes_visited = candidate_nodes;
-			}
-
-			is_first_pass = false;
 		}
 
-		// Found a match? Cool, add the start and end of the path. End node can be traversed backward to start node. Otherwise there's nothing to do.
-		if(destination !== null) {
-			config.highlight_path = {
-				start: node,
-				end: destination
-			};
+		// Now we filter out candidates that have already been capped by KCCO.
+		let valid_candidates = candidate_nodes.filter((candidate) => {
+			return candidate.belong !== faction_map.KCCO.id;
+		});
+
+		// If we have any valid candidates, then we can proceed with node selection, otherwise we need to take another pass at the next BFS depth.
+		if(valid_candidates.length > 0) {
+			destination = calculateNodePriority(valid_candidates);
+		} else {
+			nodes_visited = candidate_nodes;
+		}
+
+		is_first_pass = false;
+	}
+
+	// Found a match? Cool, now find the very first node along the path for a mob to move to.
+	if(destination !== null) {
+		while(destination.prev_node !== node) {
+			destination = destination.prev_node;
 		}
 	}
 
-	updateCanvas();
+	for(let next_node of nodes) {
+		if(next_node.hasOwnProperty('prev_node')) {
+			next_node.prev_node = null;
+			delete next_node.prev_node;
+		}
+	}
+
+	return destination;
+}
+
+function calculateEnemyMoveTurn(data_set) {
+	// First pass, calculate normal enemy mob movement. Second pass, calculate deathstack movement.
+	for(let enemy_type of [1, 2]) {
+		let enemies_of_type = data_set.filter((node) => {
+			return node.belong === faction_map.KCCO.id && node.occupied === enemy_type;
+		});
+
+		for(let node of enemies_of_type) {
+			let target_node = calculateNextNodeMove(node, data_set);
+
+			if(target_node === null) {
+				continue;
+			}
+
+			target_node.occupied = node.occupied;
+			node.occupied = 0;
+			target_node.from_node = node;
+		}
+	}
 }
 
 window.addEventListener('DOMContentLoaded', (event) => {
@@ -378,32 +414,40 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	canvas.width = config.width;
 	canvas.height = config.height;
 
-	updateCanvas();
+	updateCanvas(data);
 
 	canvas.addEventListener('mousedown', function(e) {
-		// If we click anywhere, then we can assume that the current path is no longer needed. Clear it out.
-		for(let node of data) {
-			if(node.hasOwnProperty('from_node')) {
-				node.from_node = null;
-				delete node.from_node;
-			}
-		}
-
-		config.highlight_path = null;
-
 		// We only want to cycle node faction ownership if it's a left-click event. (Lol sorry mobile users, someone else can add touch support.)
 		if(e.buttons === 1) {
 			let [x, y] = getCursorPosition(canvas, e);
+			let found = false;
 			for(let node of data) {
 				// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're clicking inside of the circle.
 				let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 				if(distance <= config.radius) {
 					node.belong = (node.belong + 1) % factions.length;
+					found = true;
+				}
+			}
+
+			// Maybe the button was clicked instead.
+			if(!found) {
+				let x_min = calculateX(config.calculate_button.position[0]);
+				let x_max = x_min + config.calculate_button.width * config.calculate_button.scale * config.scale;
+				let y_min = calculateY(config.calculate_button.position[1]);
+				let y_max = y_min + config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+				// Oh, it was clicked? Then make shit happen.
+				if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+					let data_copy = JSON.parse(JSON.stringify(data));
+					calculateEnemyMoveTurn(data_copy);
+					updateCanvas(data_copy);
+					return;
 				}
 			}
 		}
 
-		updateCanvas();
+		updateCanvas(data);
 	});
 
 	canvas.addEventListener('mousemove', function(e) {
@@ -414,16 +458,23 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're hovering inside of the circle.
 			let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 			if(distance <= config.radius) {
-				canvas.style.cursor = 'pointer';
 				found = true;
 			}
 		}
 
+		// Maybe the button is being hovered over instead.
 		if(!found) {
-			canvas.style.cursor = 'default';
+			let x_min = calculateX(config.calculate_button.position[0]);
+			let x_max = x_min + config.calculate_button.width * config.calculate_button.scale * config.scale;
+			let y_min = calculateY(config.calculate_button.position[1]);
+			let y_max = y_min + config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+				found = true;
+			}
 		}
 
-		updateCanvas();
+		canvas.style.cursor = found ? 'pointer' : 'default';
 	});
 
 	canvas.addEventListener('contextmenu', function(e) {
@@ -434,18 +485,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			if(distance <= config.radius) {
 				e.preventDefault();
 
-				// Hold Ctrl + right-click a node to toggle a node's status as occupied, or just right-click to calculate enemy pathing.
-				if(e.ctrlKey) {
-					if(node.hasOwnProperty('occupied')) {
-						delete node.occupied;
-					} else {
-						node.occupied = true;
-					}
-
-					updateCanvas();
+				// Right-clicking a node toggles between unoccupied, occupied by normal mob, and occupied by deathstack.
+				if(node.hasOwnProperty('occupied')) {
+					node.occupied = (node.occupied + 1) % 3;
 				} else {
-					calculateNextNodeMove(node);
+					node.occupied = 1;
 				}
+
+				updateCanvas(data);
 			}
 		}
 	});
