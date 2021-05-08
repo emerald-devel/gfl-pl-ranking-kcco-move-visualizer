@@ -96,7 +96,7 @@ function initConfig() {
 }
 
 function exportMapState() {
-	console.log(data.map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(','));
+	return data.map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(',');
 }
 
 function importMapState(state) {
@@ -117,8 +117,6 @@ function importMapState(state) {
 	}
 
 	updateCanvas(data);
-
-	console.log('Import completed.');
 }
 
 function calculateNodeDistance(x1, y1, x2, y2) {
@@ -520,6 +518,19 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 				updateCanvas(data);
 			}
+		}
+	});
+
+	document.addEventListener('copy', function(e) {
+		e.preventDefault();
+		navigator.clipboard.writeText(exportMapState());
+	});
+
+	document.addEventListener('paste', function(e) {
+		let state = (e.clipboardData || window.clipboardData).getData('text');
+		if(/^([A-Za-z]\d+:\d:\d,)*([A-Za-z]\d+:\d:\d)$/.test(state)) {
+			importMapState(state);
+			updateCanvas(data);
 		}
 	});
 });
