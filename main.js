@@ -96,7 +96,7 @@ function initConfig() {
 }
 
 function exportNodeOccupationState() {
-	console.log(data.filter((node) => node.occupied > 0).map((node) => id_map[node.id] + ':' + node.occupied).join(','));
+	console.log(data.filter((node) => node.occupied > 0).map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(','));
 }
 
 function importNodeOccupationState(state) {
@@ -107,10 +107,12 @@ function importNodeOccupationState(state) {
 	}
 
 	for(let node_state of state.split(',')) {
-		let [node_name, occupation] = node_state.split(':');
+		let [node_name, owner, occupation] = node_state.split(':');
 		node_name = node_name.toUpperCase();
+		owner = parseInt(owner);
 		occupation = parseInt(occupation);
 
+		node_map[node_map].belong = owner;
 		node_map[node_name].occupied = occupation;
 	}
 
