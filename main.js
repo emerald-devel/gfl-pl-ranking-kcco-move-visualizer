@@ -95,11 +95,11 @@ function initConfig() {
 	config.height = (largest_y - smallest_y) * config.scale + 2 * config.margin;
 }
 
-function exportNodeOccupationState() {
-	console.log(data.filter((node) => node.occupied > 0).map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(','));
+function exportMapState() {
+	console.log(data.map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(','));
 }
 
-function importNodeOccupationState(state) {
+function importMapState(state) {
 	let node_map = {};
 	for(let node of data) {
 		node.occupied = 0;
@@ -112,7 +112,7 @@ function importNodeOccupationState(state) {
 		owner = parseInt(owner);
 		occupation = parseInt(occupation);
 
-		node_map[node_map].belong = owner;
+		node_map[node_name].belong = owner;
 		node_map[node_name].occupied = occupation;
 	}
 
