@@ -95,6 +95,30 @@ function initConfig() {
 	config.height = (largest_y - smallest_y) * config.scale + 2 * config.margin;
 }
 
+function exportNodeOccupationState() {
+	console.log(data.filter((node) => node.occupied > 0).map((node) => id_map[node.id] + ':' + node.occupied).join(','));
+}
+
+function importNodeOccupationState(state) {
+	let node_map = {};
+	for(let node of data) {
+		node.occupied = 0;
+		node_map[id_map[node.id]] = node;
+	}
+
+	for(let node_state of state.split(',')) {
+		let [node_name, occupation] = node_state.split(':');
+		node_name = node_name.toUpperCase();
+		occupation = parseInt(occupation);
+
+		node_map[node_name].occupied = occupation;
+	}
+
+	updateCanvas(data);
+
+	console.log('Import completed.');
+}
+
 function calculateNodeDistance(x1, y1, x2, y2) {
 	// a^2 + b^2 = c^2; thanks, math!
 	return Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
