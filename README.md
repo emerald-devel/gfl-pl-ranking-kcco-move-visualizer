@@ -13,6 +13,7 @@ Just download the thing and open the index.html file in your browser. No interne
 - Left-click a node to change its faction ownership.
 - Right-click a node to mark it as being occupied by a mob. One click gives it a normal mob (small dot) and a second click gives it a deathstack (large dot).
 - Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements. Clicking elsewhere will revert back to the pre-calculation view.
+- Importing and exporting of node occupation can now be done via standard copy and paste shortcuts. Simply use Ctrl+C to copy the map state and Ctrl+V to restore from a map state currently stored in your clipboard.
 
 ## Disclaimer
 
