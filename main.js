@@ -44,7 +44,8 @@ const data = raw_data.map((node) => {
 	node.friendly_id = id_map[node.id];
 	node.coordinates = [node.coordinator_x, node.coordinator_y];
 	node.occupied = node.ally_team_id > 0 ? 2 : (node.enemy_team_id > 0 ? 1 : 0);
-	node.occupied = node.belong === faction_map.KCCO.id ? node.occupied : 0;
+	node.occupied = node.belong !== faction_map.GK.id ? node.occupied : 0;
+	node.ally_occupied = node.ally_team_id > 0 && node.belong === faction_map.GK.id ? 1 : 0;
 
 	return node;
 });
@@ -58,8 +59,7 @@ const config = {
 	offset_y: 0,
 	radius: 100,
 	margin: 50,
-	highlight_path: null,
-	move_set: {},
+	turn: 1,
 	calculate_button: {
 		position: [-350, -1000],
 		width: 1000,
@@ -96,7 +96,7 @@ function initConfig() {
 }
 
 function exportMapState() {
-	return data.map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(',');
+	return config.turn + '::' + data.map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(',');
 }
 
 function importMapState(state) {
@@ -104,6 +104,13 @@ function importMapState(state) {
 	for(let node of data) {
 		node.occupied = 0;
 		node_map[id_map[node.id]] = node;
+	}
+
+	if(state.split('::').length > 1) {
+		[config.turn, state] = state.split('::');
+		config.turn = parseInt(config.turn);
+	} else {
+		config.turn = 1;
 	}
 
 	for(let node_state of state.split(',')) {
@@ -250,7 +257,16 @@ function updateCanvas(nodes) {
 		// Occupation indicator.
 		if(node.occupied) {
 			ctx.arc(calculateX(node.coordinates[0]) + config.radius, calculateY(node.coordinates[1]) - 0.8*config.radius, 0.2 * node.occupied * config.radius, 0, 2 * Math.PI, false);
-			ctx.fillStyle = faction_map[node.belong].color;
+			ctx.fillStyle = node.belong === faction_map.Paradeus.id ? faction_map.Paradeus.color : faction_map.KCCO.color;
+			ctx.fill();
+			ctx.stroke();
+			ctx.beginPath();
+		}
+
+		// Ally occupation indicator.
+		if(node.ally_occupied) {
+			ctx.arc(calculateX(node.coordinates[0]) - config.radius, calculateY(node.coordinates[1]) - 0.8*config.radius, 0.2 * node.ally_occupied * config.radius, 0, 2 * Math.PI, false);
+			ctx.fillStyle = faction_map.GK.color;
 			ctx.fill();
 			ctx.stroke();
 			ctx.beginPath();
@@ -287,6 +303,26 @@ function updateCanvas(nodes) {
 		ctx.fillText('Calculate Moves',
 			calculateX(config.calculate_button.position[0]) + config.calculate_button.width * config.scale / 2,
 			calculateY(config.calculate_button.position[1]) + 1.35 * config.calculate_button.height * config.scale / 2
+		);
+
+		ctx.stroke();
+		ctx.beginPath();
+
+		// It's another button. Another big, orange button.
+		ctx.fillStyle = config.calculate_button.color;
+		ctx.fillRect(
+			calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2,
+			calculateY(config.calculate_button.position[1]) - config.calculate_button.height * config.calculate_button.scale * config.scale,
+			config.calculate_button.width * 0.75 * config.calculate_button.scale * config.scale,
+			config.calculate_button.height * 0.75 * config.calculate_button.scale * config.scale
+		);
+
+		ctx.strokeStyle = '#252525';
+		ctx.fillStyle = '#252525';
+		ctx.font = Math.floor(0.75 * config.radius) + 'pt Arial';
+		ctx.fillText('Turn: ' + config.turn,
+			calculateX(config.calculate_button.position[0]) + 0.01 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2 + config.calculate_button.width * config.scale / 2,
+			calculateY(config.calculate_button.position[1]) - 1.15 * config.calculate_button.height * config.calculate_button.scale * config.scale + 1.35 * config.calculate_button.height * config.scale / 2
 		);
 
 		ctx.stroke();
@@ -402,6 +438,30 @@ function calculateNextNodeMove(node, nodes) {
 }
 
 function calculateEnemyMoveTurn(data_set) {
+	// First, spawn mobs on helipads.
+	data_set.filter((node) => node.belong === faction_map.KCCO.id && (node.type === 3 || node.type === 7) && !node.occupied).map((node) => {
+		let occupied = 1;
+		if(node.active_cycle) {
+			let [closed, open] = node.active_cycle.split(',').map((number) => parseInt(number));
+			let current_turn = 0;
+			while(true) {
+				current_turn += closed;
+				if(current_turn >= config.turn) {
+					occupied = 0;
+					break;
+				}
+
+				current_turn += open;
+				if(current_turn >= config.turn) {
+					occupied = 1;
+					break;
+				}
+			}
+		}
+
+		node.occupied = occupied;
+	});
+
 	// First pass, calculate normal enemy mob movement. Second pass, calculate deathstack movement.
 	for(let enemy_type of [1, 2]) {
 		let enemies_of_type = data_set.filter((node) => {
@@ -445,7 +505,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				}
 			}
 
-			// Maybe the button was clicked instead.
+			// Maybe the calculate button was clicked instead.
 			if(!found) {
 				let x_min = calculateX(config.calculate_button.position[0]);
 				let x_max = x_min + config.calculate_button.width * config.calculate_button.scale * config.scale;
@@ -458,6 +518,23 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					calculateEnemyMoveTurn(data_copy);
 					updateCanvas(data_copy);
 					return;
+				}
+			}
+
+			// Maybe the turn button was clicked instead.
+			if(!found) {
+				let x_min = calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2;
+				let x_max = x_min + 0.75 * config.calculate_button.width * config.calculate_button.scale * config.scale;
+				let y_min = calculateY(config.calculate_button.position[1]) - config.calculate_button.height * config.calculate_button.scale * config.scale;
+				let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+				if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+					config.turn = (config.turn + 1) % 9;
+					if(config.turn === 0) {
+						config.turn = 1;
+					}
+
+					found = true;
 				}
 			}
 		}
@@ -477,12 +554,24 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			}
 		}
 
-		// Maybe the button is being hovered over instead.
+		// Maybe the calculate button is being hovered over instead.
 		if(!found) {
 			let x_min = calculateX(config.calculate_button.position[0]);
 			let x_max = x_min + config.calculate_button.width * config.calculate_button.scale * config.scale;
 			let y_min = calculateY(config.calculate_button.position[1]);
 			let y_max = y_min + config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+				found = true;
+			}
+		}
+
+		// Maybe the turn button is being hovered over instead.
+		if(!found) {
+			let x_min = calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2;
+			let x_max = x_min + 0.75 * config.calculate_button.width * config.calculate_button.scale * config.scale;
+			let y_min = calculateY(config.calculate_button.position[1]) - config.calculate_button.height * config.calculate_button.scale * config.scale;
+			let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
 				found = true;
@@ -500,11 +589,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			if(distance <= config.radius) {
 				e.preventDefault();
 
+				let property_name = e.ctrlKey ? 'ally_occupied' : 'occupied';
+
 				// Right-clicking a node toggles between unoccupied, occupied by normal mob, and occupied by deathstack.
-				if(node.hasOwnProperty('occupied')) {
-					node.occupied = (node.occupied + 1) % 3;
+				if(node.hasOwnProperty(property_name)) {
+					node[property_name] = (node[property_name] + 1) % 3;
 				} else {
-					node.occupied = 1;
+					node[property_name] = 1;
 				}
 
 				updateCanvas(data);
@@ -519,7 +610,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	document.addEventListener('paste', function(e) {
 		let state = (e.clipboardData || window.clipboardData).getData('text');
-		if(/^([A-Za-z]\d+:\d:\d,)*([A-Za-z]\d+:\d:\d)$/.test(state)) {
+		if(/^(\d::)?([A-Za-z]\d+:\d:\d,)*([A-Za-z]\d+:\d:\d)$/.test(state)) {
 			importMapState(state);
 			updateCanvas(data);
 		}
