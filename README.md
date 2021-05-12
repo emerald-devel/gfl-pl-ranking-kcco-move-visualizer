@@ -17,9 +17,10 @@ Just download the thing and open the index.html file in your browser. No interne
 - Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements, including from any new spawns. Clicking elsewhere will revert back to the pre-calculation view.
 - Importing and exporting of the map state can now be done via standard copy and paste shortcuts. Simply use Ctrl+C to copy the map state and Ctrl+V to restore from a map state currently stored in your clipboard.
 
-## Disclaimer
+## Disclaimers
 
-Requires field testing. The pathing calculated is based on assumptions derived from experiments, not on any actual reverse-engineering or dev-verified information. Discrepancies may exist. Use at your own risk.
+- A number of players have used this tool, including myself, and found it to be largely accurate. The pathing calculated is based on assumptions derived from experiments, however, and not on any actual reverse-engineering or dev-verified information. Discrepancies may exist. Use at your own risk.
+- Enemies on "alert" AI (i.e. ELID smashers) will most likely show incorrect pathing information. Do not rely on this tool for the ELID zone. If you do, then adjust your planning according to the knowledge that discrepancies will exist.
 
 ## Other
 
