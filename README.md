@@ -13,7 +13,8 @@ Just download the thing and open the index.html file in your browser. No interne
 - Left-click a node to change its faction ownership.
 - Right-click a node to mark it as being occupied by a mob. One click gives it a normal mob (small dot) and a second click gives it a deathstack (large dot).
 - Ctrl + right-click a node to mark it as being occupied by an ally. One click gives it an NPC (small dot) and a second click gives it a deployed echelon (large dot).
-- Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements. Clicking elsewhere will revert back to the pre-calculation view.
+- The `Turn: X` button allows you to select the current turn you're on. Setting this to the correct number will ensure that the closed helipad spawns mobs on applicable turns while not spawning when it shouldn't.
+- Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements, including from any new spawns. Clicking elsewhere will revert back to the pre-calculation view.
 - Importing and exporting of the map state can now be done via standard copy and paste shortcuts. Simply use Ctrl+C to copy the map state and Ctrl+V to restore from a map state currently stored in your clipboard.
 
 ## Disclaimer
