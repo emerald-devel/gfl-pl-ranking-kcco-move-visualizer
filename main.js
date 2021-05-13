@@ -96,13 +96,14 @@ function initConfig() {
 }
 
 function exportMapState() {
-	return config.turn + '::' + data.map((node) => [id_map[node.id], node.belong, node.occupied].join(':')).join(',');
+	return config.turn + '::' + data.map((node) => [id_map[node.id], node.belong, node.occupied, node.ally_occupied].join(':')).join(',');
 }
 
 function importMapState(state) {
 	let node_map = {};
 	for(let node of data) {
 		node.occupied = 0;
+		node.ally_occupied = 0;
 		node_map[id_map[node.id]] = node;
 	}
 
@@ -114,13 +115,15 @@ function importMapState(state) {
 	}
 
 	for(let node_state of state.split(',')) {
-		let [node_name, owner, occupation] = node_state.split(':');
+		let [node_name, owner, occupation, ally_occupation] = node_state.split(':');
 		node_name = node_name.toUpperCase();
 		owner = parseInt(owner);
 		occupation = parseInt(occupation);
+		ally_occupation = parseInt(ally_occupation || 0);
 
 		node_map[node_name].belong = owner;
 		node_map[node_name].occupied = occupation;
+		node_map[node_name].ally_occupied = ally_occupation;
 	}
 
 	updateCanvas(data);
@@ -610,7 +613,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	document.addEventListener('paste', function(e) {
 		let state = (e.clipboardData || window.clipboardData).getData('text');
-		if(/^(\d::)?([A-Za-z]\d+:\d:\d,)*([A-Za-z]\d+:\d:\d)$/.test(state)) {
+		if(/^(\d::)?([A-Za-z]\d+(:\d){2,3},)*([A-Za-z]\d+(:\d){2,3})$/.test(state)) {
 			importMapState(state);
 			updateCanvas(data);
 		}
