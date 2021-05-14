@@ -586,6 +586,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	canvas.addEventListener('contextmenu', function(e) {
 		let [x, y] = getCursorPosition(canvas, e);
+		let found = false;
+
 		for(let node of data) {
 			// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're clicking inside of the circle.
 			let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
@@ -601,6 +603,27 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					node[property_name] = 1;
 				}
 
+				found = true;
+				updateCanvas(data);
+			}
+		}
+
+		// Maybe the turn button was clicked instead.
+		if(!found) {
+			e.preventDefault();
+
+			let x_min = calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2;
+			let x_max = x_min + 0.75 * config.calculate_button.width * config.calculate_button.scale * config.scale;
+			let y_min = calculateY(config.calculate_button.position[1]) - config.calculate_button.height * config.calculate_button.scale * config.scale;
+			let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+				config.turn = (config.turn - 1);
+				if(config.turn < 1) {
+					config.turn += 8;
+				}
+
+				found = true;
 				updateCanvas(data);
 			}
 		}
