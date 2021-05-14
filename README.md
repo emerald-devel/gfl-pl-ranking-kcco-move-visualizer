@@ -11,6 +11,7 @@ Just download the thing and open the index.html file in your browser. No interne
 ## How to Use
 
 - Left-click a node to change its faction ownership.
+- Ctrl + left-click a node to mark it as being affected by an EMP.
 - Right-click a node to mark it as being occupied by a mob. One click gives it a normal mob (small dot) and a second click gives it a deathstack (large dot).
 - Ctrl + right-click a node to mark it as being occupied by an ally. One click gives it an NPC (small dot) and a second click gives it a deployed echelon (large dot).
 - The `Turn: X` button allows you to select the current turn you're on. Setting this to the correct number will ensure that the closed helipad spawns mobs on applicable turns while not spawning when it shouldn't. Left-clicking will add 1 to the turn and right-clicking will remove 1 (don't worry, it wraps around either way).
