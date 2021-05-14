@@ -104,7 +104,7 @@ function initConfig() {
 }
 
 function exportMapState() {
-	return config.turn + '::' + data.map((node) => [id_map[node.id], node.belong, node.occupied, node.ally_occupied].join(':')).join(',');
+	return config.turn + '::' + data.map((node) => [id_map[node.id], node.belong, node.occupied, node.ally_occupied, node.state].join(':')).join(',');
 }
 
 function importMapState(state) {
@@ -112,6 +112,7 @@ function importMapState(state) {
 	for(let node of data) {
 		node.occupied = 0;
 		node.ally_occupied = 0;
+		node.state = 0;
 		node_map[id_map[node.id]] = node;
 	}
 
@@ -123,15 +124,17 @@ function importMapState(state) {
 	}
 
 	for(let node_state of state.split(',')) {
-		let [node_name, owner, occupation, ally_occupation] = node_state.split(':');
+		let [node_name, owner, occupation, ally_occupation, node_emp_state] = node_state.split(':');
 		node_name = node_name.toUpperCase();
 		owner = parseInt(owner);
 		occupation = parseInt(occupation);
 		ally_occupation = parseInt(ally_occupation || 0);
+		node_emp_state = parseInt(node_emp_state || 0)
 
 		node_map[node_name].belong = owner;
 		node_map[node_name].occupied = occupation;
 		node_map[node_name].ally_occupied = ally_occupation;
+		node_map[node_name].state = node_emp_state;
 	}
 
 	updateCanvas(data);
@@ -531,7 +534,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 				if(distance <= config.radius) {
 					if(e.ctrlKey) {
-						node.state = (node.state + 1) % Object.keys(node_states).length;
+						if(node.occupied) {
+							node.state = (node.state + 1) % Object.keys(node_states).length;
+						}
 					} else {
 						node.belong = (node.belong + 1) % factions.length;
 					}
@@ -635,6 +640,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					node[property_name] = 1;
 				}
 
+				if(!e.ctrlKey) {
+					node.state = 0;
+				}
+
 				found = true;
 				updateCanvas(data);
 			}
@@ -668,7 +677,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
 	document.addEventListener('paste', function(e) {
 		let state = (e.clipboardData || window.clipboardData).getData('text');
-		if(/^(\d::)?([A-Za-z]\d+(:\d){2,3},)*([A-Za-z]\d+(:\d){2,3})$/.test(state)) {
+		if(/^(\d::)?([A-Za-z]\d+(:\d){2,4},)*([A-Za-z]\d+(:\d){2,4})$/.test(state)) {
 			importMapState(state);
 			updateCanvas(data);
 		}
