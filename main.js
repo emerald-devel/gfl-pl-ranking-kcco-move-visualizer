@@ -8,6 +8,12 @@ const node_types = {
 };
 
 // Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure. Yes, it's a copy-pasta of the above comment, get over it.
+const node_states = {
+	0: 'Normal',
+	1: 'EMP'
+};
+
+// Necessary? Probably not. But magic numbers and magic strings are disgusting and I like how easy this is to configure. Yes, it's a copy-pasta of the above comment, get over it.
 const factions = [
 	{
 		id: 3,
@@ -46,6 +52,7 @@ const data = raw_data.map((node) => {
 	node.occupied = node.ally_team_id > 0 ? 2 : (node.enemy_team_id > 0 ? 1 : 0);
 	node.occupied = node.belong !== faction_map.GK.id ? node.occupied : 0;
 	node.ally_occupied = node.ally_team_id > 0 && node.belong === faction_map.GK.id ? 1 : 0;
+	node.state = 0;
 
 	return node;
 });
@@ -66,7 +73,8 @@ const config = {
 		height: 250,
 		scale: 1,
 		color: '#EE9933'
-	}
+	},
+	no_spawn_helipads: ['Z8']
 };
 
 function initConfig() {
@@ -275,6 +283,25 @@ function updateCanvas(nodes) {
 			ctx.beginPath();
 		}
 
+		// Node state indicator.
+		if(node.state) {
+			ctx.font = 'bold ' + Math.floor(0.5 * config.radius) + 'pt Arial';
+
+			ctx.strokeStyle = '#252525';
+			ctx.lineWidth = 3;
+			ctx.strokeText('E',
+				calculateX(node.coordinates[0]) + config.radius,
+				calculateY(node.coordinates[1]) + 1.2*config.radius,
+			);
+			ctx.fillStyle = '#CC00FF';
+			ctx.fillText('E',
+				calculateX(node.coordinates[0]) + config.radius,
+				calculateY(node.coordinates[1]) + 1.2*config.radius,
+			);
+			ctx.stroke();
+			ctx.beginPath();
+		}
+
 		ctx.fillStyle = '#252525';
 		ctx.textAlign = 'center';
 
@@ -442,7 +469,7 @@ function calculateNextNodeMove(node, nodes) {
 
 function calculateEnemyMoveTurn(data_set) {
 	// First, spawn mobs on helipads.
-	data_set.filter((node) => node.belong === faction_map.KCCO.id && (node.type === 3 || node.type === 7) && !node.occupied).map((node) => {
+	data_set.filter((node) => node.belong === faction_map.KCCO.id && (node.type === 3 || node.type === 7) && !node.occupied && config.no_spawn_helipads.indexOf(node.friendly_id) < 0).map((node) => {
 		let occupied = 1;
 		if(node.active_cycle) {
 			let [closed, open] = node.active_cycle.split(',').map((number) => parseInt(number));
@@ -468,7 +495,7 @@ function calculateEnemyMoveTurn(data_set) {
 	// First pass, calculate normal enemy mob movement. Second pass, calculate deathstack movement.
 	for(let enemy_type of [1, 2]) {
 		let enemies_of_type = data_set.filter((node) => {
-			return node.belong === faction_map.KCCO.id && node.occupied === enemy_type;
+			return node.belong === faction_map.KCCO.id && node.occupied === enemy_type && node.state === 0;
 		});
 
 		for(let node of enemies_of_type) {
@@ -495,7 +522,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	updateCanvas(data);
 
 	canvas.addEventListener('mousedown', function(e) {
-		// We only want to cycle node faction ownership if it's a left-click event. (Lol sorry mobile users, someone else can add touch support.)
+		// We only want to cycle node faction ownership or accessibility if it's a left-click event. (Lol sorry mobile users, someone else can add touch support.)
 		if(e.buttons === 1) {
 			let [x, y] = getCursorPosition(canvas, e);
 			let found = false;
@@ -503,7 +530,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're clicking inside of the circle.
 				let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 				if(distance <= config.radius) {
-					node.belong = (node.belong + 1) % factions.length;
+					if(e.ctrlKey) {
+						node.state = (node.state + 1) % Object.keys(node_states).length;
+					} else {
+						node.belong = (node.belong + 1) % factions.length;
+					}
+
 					found = true;
 				}
 			}
@@ -532,8 +564,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 				if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
-					config.turn = (config.turn + 1) % 9;
-					if(config.turn === 0) {
+					config.turn++;
+					if(config.turn > 8) {
 						config.turn = 1;
 					}
 
@@ -618,9 +650,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
-				config.turn = (config.turn - 1);
+				config.turn--;
 				if(config.turn < 1) {
-					config.turn += 8;
+					config.turn = 8;
 				}
 
 				found = true;
