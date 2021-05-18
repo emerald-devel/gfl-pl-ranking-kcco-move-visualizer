@@ -16,7 +16,9 @@ Just download the thing and open the index.html file in your browser. No interne
 - Ctrl + right-click a node to mark it as being occupied by an ally. One click gives it an NPC (small dot) and a second click gives it a deployed echelon (large dot).
 - The `Turn: X` button allows you to select the current turn you're on. Setting this to the correct number will ensure that the closed helipad spawns mobs on applicable turns while not spawning when it shouldn't. Left-clicking will add 1 to the turn and right-clicking will remove 1 (don't worry, it wraps around either way).
 - Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements, including from any new spawns. Clicking elsewhere will revert back to the pre-calculation view.
+- Want to take the calculated moves and automatically make your current map state reflect them? Just hit the commit turn button. Less clicking needed.
 - Importing and exporting of the map state can now be done via standard copy and paste shortcuts. Simply use Ctrl+C to copy the map state and Ctrl+V to restore from a map state currently stored in your clipboard.
+- Tried to experiment with some changes and don't like them? Forgot to save the map state beforehand? Ctrl+Z is now a thing. Ctrl+Y is not, however, because I'm lazy. Remember to save your map state next time, you fucking brainlet.
 
 ## Disclaimers
 
