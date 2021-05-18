@@ -77,6 +77,8 @@ const config = {
 	no_spawn_helipads: ['Z8']
 };
 
+const previous_map_states = [];
+
 function initConfig() {
 	let smallest_x, smallest_y, largest_x, largest_y;
 	[smallest_x, smallest_y] = [largest_x, largest_y] = data[0].coordinates;
@@ -101,6 +103,13 @@ function initConfig() {
 	config.offset_y = -smallest_y * config.scale + config.margin;
 	config.width = (largest_x - smallest_x) * config.scale + 2 * config.margin;
 	config.height = (largest_y - smallest_y) * config.scale + 2 * config.margin;
+}
+
+function saveMapState() {
+	previous_map_states.push(exportMapState());
+	if(previous_map_states.length > 1000) {
+		previous_map_states.shift();
+	}
 }
 
 function exportMapState() {
@@ -552,6 +561,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				// Fun fact: if the distance from your mouse to the center of a circle is less than or equal to the radius, then you're clicking inside of the circle.
 				let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 				if(distance <= config.radius) {
+					saveMapState();
+
 					if(e.ctrlKey) {
 						if(node.occupied) {
 							node.state = (node.state + 1) % Object.keys(node_states).length;
@@ -588,6 +599,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 				if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+					saveMapState();
 					config.turn++;
 					if(config.turn > 8) {
 						config.turn = 1;
@@ -605,6 +617,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 				let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 				if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+					saveMapState();
 					calculateEnemyMoveTurn(data);
 					for(let node of data) {
 						if(node.hasOwnProperty('from_node')) {
@@ -687,6 +700,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let distance = calculateNodeDistance(x, y, calculateX(node.coordinates[0]), calculateY(node.coordinates[1]));
 			if(distance <= config.radius) {
 				e.preventDefault();
+				saveMapState();
 
 				let property_name = e.ctrlKey ? 'ally_occupied' : 'occupied';
 
@@ -716,6 +730,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+				saveMapState();
+
 				config.turn--;
 				if(config.turn < 1) {
 					config.turn = 8;
@@ -735,8 +751,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	document.addEventListener('paste', function(e) {
 		let state = (e.clipboardData || window.clipboardData).getData('text');
 		if(/^(\d::)?([A-Za-z]\d+(:\d){2,4},)*([A-Za-z]\d+(:\d){2,4})$/.test(state)) {
+			saveMapState();
 			importMapState(state);
 			updateCanvas(data);
+		}
+	});
+
+	document.addEventListener('keydown', function(e) {
+		if(e.ctrlKey && e.key === 'z') {
+			if(previous_map_states.length) {
+				importMapState(previous_map_states.pop());
+				updateCanvas(data);
+			}
 		}
 	});
 });
