@@ -451,17 +451,19 @@ function calculateNextNodeMove(node, nodes) {
 				if(node_map.hasOwnProperty(sibling_id)) {
 					let sibling_node = node_map[sibling_id];
 
+					// If not directly adjacent and occupied, then add the node to our list of candidates so we can check if it's a winner later.
+					if(!(is_first_pass && sibling_node.occupied)) {
+						candidate_nodes.push(sibling_node);
+					} else {
+						continue;
+					}
+
 					// Once we've located this unvisited sibling, we remove it from the node map, which effectively treats it as having been visited.
 					node_map[sibling_id] = null;
 					delete node_map[sibling_id];
 
 					// By keeping track of which node first found this sibling, we can effectively cache the path of a BFS result for this particular node by traversing from the end node back to the beginning.
 					sibling_node.prev_node = visited_node;
-
-					// If not occupied, then add the node to our list of candidates so we can check if it's a winner later.
-					if(!is_first_pass || !sibling_node.occupied) {
-						candidate_nodes.push(sibling_node);
-					}
 				}
 			}
 		}
