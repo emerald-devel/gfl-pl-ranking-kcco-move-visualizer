@@ -359,6 +359,25 @@ function updateCanvas(nodes) {
 		);
 
 		ctx.stroke();
+
+		// Oh, hey, guess what it is? It's yet another button. Yet another big, orange button.
+		ctx.fillStyle = config.calculate_button.color;
+		ctx.fillRect(
+			calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2,
+			calculateY(config.calculate_button.position[1]) + 1.25 * config.calculate_button.height * config.calculate_button.scale * config.scale,
+			config.calculate_button.width * 0.75 * config.calculate_button.scale * config.scale,
+			config.calculate_button.height * 0.75 * config.calculate_button.scale * config.scale
+		);
+
+		ctx.strokeStyle = '#252525';
+		ctx.fillStyle = '#252525';
+		ctx.font = Math.floor(0.75 * config.radius) + 'pt Arial';
+		ctx.fillText('Commit Turn',
+			calculateX(config.calculate_button.position[0]) + 0.01 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2 + config.calculate_button.width * config.scale / 2,
+			calculateY(config.calculate_button.position[1]) + 1.1 * config.calculate_button.height * config.calculate_button.scale * config.scale + 1.35 * config.calculate_button.height * config.scale / 2
+		);
+
+		ctx.stroke();
 	}
 }
 
@@ -577,6 +596,32 @@ window.addEventListener('DOMContentLoaded', (event) => {
 					found = true;
 				}
 			}
+
+			// Maybe the commit turn button was clicked instead.
+			if(!found) {
+				let x_min = calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2;
+				let x_max = x_min + 0.75 * config.calculate_button.width * config.calculate_button.scale * config.scale;
+				let y_min = calculateY(config.calculate_button.position[1]) + 1.25 * config.calculate_button.height * config.calculate_button.scale * config.scale;
+				let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+				if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+					calculateEnemyMoveTurn(data);
+					for(let node of data) {
+						if(node.hasOwnProperty('from_node')) {
+							node.from_node = null;
+							delete node.from_node;
+						}
+					}
+
+					config.turn++;
+					if(config.turn > 8) {
+						config.turn = 1;
+					}
+
+					updateCanvas(data);
+					found = true;
+				}
+			}
 		}
 
 		updateCanvas(data);
@@ -611,6 +656,18 @@ window.addEventListener('DOMContentLoaded', (event) => {
 			let x_min = calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2;
 			let x_max = x_min + 0.75 * config.calculate_button.width * config.calculate_button.scale * config.scale;
 			let y_min = calculateY(config.calculate_button.position[1]) - config.calculate_button.height * config.calculate_button.scale * config.scale;
+			let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
+
+			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
+				found = true;
+			}
+		}
+
+		// Maybe the commit turn button is being hovered over instead.
+		if(!found) {
+			let x_min = calculateX(config.calculate_button.position[0]) + 0.25 * config.calculate_button.width * config.calculate_button.scale * config.scale / 2;
+			let x_max = x_min + 0.75 * config.calculate_button.width * config.calculate_button.scale * config.scale;
+			let y_min = calculateY(config.calculate_button.position[1]) + 1.25 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 			let y_max = y_min + 0.75 * config.calculate_button.height * config.calculate_button.scale * config.scale;
 
 			if(x >= x_min && x <= x_max && y >= y_min && y <= y_max) {
