@@ -77,7 +77,8 @@ const config = {
 	no_spawn_helipads: ['Z8']
 };
 
-const previous_map_states = [];
+const map_state_undo_stack = [];
+const map_state_redo_stack = [];
 
 function initConfig() {
 	let smallest_x, smallest_y, largest_x, largest_y;
@@ -106,9 +107,24 @@ function initConfig() {
 }
 
 function saveMapState() {
-	previous_map_states.push(exportMapState());
-	if(previous_map_states.length > 1000) {
-		previous_map_states.shift();
+	map_state_redo_stack.splice(0, map_state_redo_stack.length);
+	map_state_undo_stack.push(exportMapState());
+	if(map_state_undo_stack.length > 1000) {
+		map_state_undo_stack.shift();
+	}
+}
+
+function undoMapStateChange() {
+	if(map_state_undo_stack.length) {
+		map_state_redo_stack.push(exportMapState());
+		importMapState(map_state_undo_stack.pop());
+	}
+}
+
+function redoMapStateChange() {
+	if(map_state_redo_stack.length) {
+		map_state_undo_stack.push(exportMapState());
+		importMapState(map_state_redo_stack.pop());
 	}
 }
 
@@ -761,9 +777,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	});
 
 	document.addEventListener('keydown', function(e) {
-		if(e.ctrlKey && e.key === 'z') {
-			if(previous_map_states.length) {
-				importMapState(previous_map_states.pop());
+		if(e.ctrlKey) {
+			if(e.key === 'z') {
+				undoMapStateChange();
+				updateCanvas(data);
+			} else if(e.key === 'y') {
+				redoMapStateChange();
 				updateCanvas(data);
 			}
 		}
