@@ -18,7 +18,7 @@ Just download the thing and open the index.html file in your browser. No interne
 - Once you have your map in the desired state, just click the big orange button. This will show the expected enemy turn movements, including from any new spawns. Clicking elsewhere will revert back to the pre-calculation view.
 - Want to take the calculated moves and automatically make your current map state reflect them? Just hit the commit turn button. Less clicking needed.
 - Importing and exporting of the map state can now be done via standard copy and paste shortcuts. Simply use Ctrl+C to copy the map state and Ctrl+V to restore from a map state currently stored in your clipboard.
-- Tried to experiment with some changes and don't like them? Forgot to save the map state beforehand? Ctrl+Z is now a thing. Ctrl+Y is not, however, because I'm lazy. Remember to save your map state next time, you fucking brainlet.
+- Tried to experiment with some changes and don't like them? Forgot to save the map state beforehand? Ctrl+Z is now a thing. Screwed up by hitting Ctrl+Z out of habit? Ctrl+Y can reverse that, too. Remember to save your map state next time, you fucking brainlet.
 
 ## Disclaimers
 
