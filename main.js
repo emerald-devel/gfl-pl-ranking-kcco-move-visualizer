@@ -467,13 +467,10 @@ function calculateNextNodeMove(node, nodes) {
 				if(node_map.hasOwnProperty(sibling_id)) {
 					let sibling_node = node_map[sibling_id];
 
-					// We can't move directly to an occupied node, so we don't want to visit it on the first pass.
-					if(is_first_pass && sibling_node.occupied) {
-						continue;
+					// If not directly adjacent and occupied, then add the node to our list of candidates so we can check if it's a winner later.
+					if(!(is_first_pass && sibling_node.occupied)) {
+						candidate_nodes.push(sibling_node);
 					}
-
-					// Add the node to our list of candidates so we can check if it's a winner later.
-					candidate_nodes.push(sibling_node);
 
 					// Once we've located this unvisited sibling, we remove it from the node map, which effectively treats it as having been visited.
 					node_map[sibling_id] = null;
