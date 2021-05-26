@@ -19,6 +19,7 @@ Just download the thing and open the index.html file in your browser. No interne
 - Want to take the calculated moves and automatically make your current map state reflect them? Just hit the commit turn button. Less clicking needed.
 - Importing and exporting of the map state can now be done via standard copy and paste shortcuts. Simply use Ctrl+C to copy the map state and Ctrl+V to restore from a map state currently stored in your clipboard.
 - Tried to experiment with some changes and don't like them? Forgot to save the map state beforehand? Ctrl+Z is now a thing. Screwed up by hitting Ctrl+Z out of habit? Ctrl+Y can reverse that, too. Remember to save your map state next time, you fucking brainlet.
+- Want a clickable link to a map state? Just add `?state={your state here}` (without the curly braces!) to the end of the sim tool's URL and enjoy having fewer keys to press.
 
 ## Disclaimers
 
