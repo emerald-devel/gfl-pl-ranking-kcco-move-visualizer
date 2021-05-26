@@ -566,6 +566,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
 	canvas.width = config.width;
 	canvas.height = config.height;
 
+	let initial_state = (new URLSearchParams(window.location.search)).get('state');
+	if(initial_state) {
+		importMapState(initial_state);
+	}
+
 	updateCanvas(data);
 
 	canvas.addEventListener('mousedown', function(e) {
